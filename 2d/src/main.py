@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import Slider
 import wind_solver as physics
 
 Nx = 300  #width
@@ -12,19 +13,31 @@ X, Y = physics.create_grid(Nx,Ny)
 
 mask = physics.create_obstacle_mask(X, Y, center_x=Nx//2.5, center_y=Ny//2, radius=15)
 
-sim = physics.LBMSolver(Nx, Ny, mask)
+# Create solver with wind velocity (adjust inlet_velocity to control wind strength)
+sim = physics.LBMSolver(Nx, Ny, mask, inlet_velocity=0.1)
 
 particles_x = np.random.uniform(0, Nx, num_particles)
 particles_y = np.random.uniform(0, Ny, num_particles)
 
-fig, ax = plt.subplots(figsize=(12, 4))
+fig, ax = plt.subplots(figsize=(12, 5))
+plt.subplots_adjust(bottom=0.2)
+
 ax.set_xlim(0, Nx)
 ax.set_ylim(0, Ny)
 ax.contourf(X, Y, mask, levels=[0.5, 1], colors='black')
-curl_plot = ax.imshow(np.zeros((Ny, Nx)), cmap='bwr', origin='lower', 
+curl_plot = ax.imshow(np.zeros((Ny, Nx)), cmap='bwr', origin='lower',
                       vmin=-0.05, vmax=0.05, alpha=0.8)
 
 points, = ax.plot(particles_x, particles_y, 'k.', markersize=2, alpha=0.5)
+
+# Add slider for wind speed control
+ax_slider = plt.axes([0.2, 0.05, 0.6, 0.03])
+slider = Slider(ax_slider, 'Wind Speed', 0.0, 0.3, valinit=0.1, valstep=0.01)
+
+def update_wind_speed(_val):
+    sim.inlet_velocity = slider.val
+
+slider.on_changed(update_wind_speed)
 
 def update(frame):
     global particles_x, particles_y
